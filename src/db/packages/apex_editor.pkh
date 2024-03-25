@@ -1,0 +1,181 @@
+create or replace package "APEX_EDITOR" as
+
+/************************************************************************************
+ *
+ * Editing Procedures
+ *
+ ************************************************************************************/
+
+  /*
+   * set_page_title
+   *
+   * Changes the page title of an existing page in the given app to the given title.
+   */
+  procedure set_page_title(p_app_id in number, p_page_id in number, p_page_title in varchar2, p_apex_session_id in varchar2);
+  
+  /*
+   * set_region_title
+   *
+   * Changes the title of the region with the given region_id on the page with the given page_id inside the application with the given app_id
+   */
+  procedure set_region_title(p_app_id in number, p_page_id in number,  p_region_id in number, p_region_title in varchar2, p_apex_session_id in varchar2);
+  
+  /*
+   * set_region_text
+   *
+   * Changes the text shown in the region with the given region_id on the page with the given page_id inside the application with the given app_id
+   */
+  procedure set_region_text(p_app_id in number, p_page_id in number,  p_region_id in number, p_region_text in varchar2, p_apex_session_id in varchar2);
+
+  /*
+   * set_region_column_label
+   *
+   * Changes the label of a table region's column on the page with the given page_id inside the application with the given app_id
+   */  
+  procedure set_region_column_label(p_app_id in number, p_page_id in number, p_column_id in number, p_new_label in varchar2, p_apex_session_id in varchar2);
+
+  /*
+   * set_column_format_mask
+   *
+   * Changes the format mask of a table region's column (or inserts it, if it does not have a format mask yet)
+   */  
+  procedure set_column_format_mask(p_app_id in number, p_page_id in number, p_column_id in number, p_new_format_mask in varchar2, p_apex_session_id in varchar2);
+
+  /*
+   * set_table_region_sql_statement
+   *
+   * Changes an Interactive Report's sql statement
+   */  
+  procedure set_table_region_sql_statement(p_app_id in number, p_page_id in number, p_region_id in number, p_new_sql_statement in clob, p_new_columns_desc in db_utils.t_sql_desc, p_apex_session_id in number);
+
+  /*
+   * set_table_column_type
+   *
+   * Sets the type of a column in an interactive report region
+   *
+   * 
+   * Param p_page_id: the page on which the region is
+   * Param p_new_column_type: The new type of the column. Must be 'PLAIN_TEXT', 'LINK', or 'HIDDEN' 
+   *
+   * If the p_new_column_type is 'LINK' the following parameters must be given:   
+   * Param p_link_target_page_id: the page ID to which the link should point
+   * Param p_link_target_page_items: The page item names on the target page that should be filled with values as a commaseparated list
+   * Param p_link_page_item_values: The columnnames from the region whose values should be used to fill the target page items encapsulated by # as a commaseparated list, e.g. #column_name1#,#column_name2#
+   */
+  procedure set_table_column_type(p_app_id in number, p_page_id in number, p_region_id in number, p_column_id in number, p_new_column_type in varchar2, p_apex_session_id in varchar2, p_link_target_page_id in number default null, p_link_target_page_items in varchar2 default null, p_link_page_item_values in varchar2 default null);
+  
+  /*
+   * set_table_region_link_to_page
+   *
+   * Sets the link column of an interactive report region
+   *
+   * Param p_page_id: the page on which the region is
+   * Param p_link_target_page_id: the page ID to which the link should point
+   * Param p_link_target_page_items: The page item names on the target page that should be filled with values as a commaseparated list
+   * Param p_link_page_item_values: The columnnames from the region whose values should be used to fill the target page items encapsulated by # as a commaseparated list, e.g. #column_name1#,#column_name2#
+   */
+  procedure set_table_region_link_to_page(p_app_id in number, p_page_id in number, p_region_id in number, p_link_target_page_id in number, p_link_target_page_items in varchar2, p_link_page_item_values in varchar2, p_apex_session_id in varchar2); 
+  
+  /*
+   * set_page_item_label
+   *
+   * Changes the label of a page item on the page with the given page_id inside the application with the given app_id
+   */    
+  procedure set_page_item_label(p_app_id in number, p_page_id in number, p_page_item_name in varchar2, p_new_label in varchar2, p_apex_session_id in varchar2);
+  
+  
+/************************************************************************************
+ *
+ * Create Procedures
+ *
+ ************************************************************************************/
+
+  /*
+   * create_new_empty_page
+   *
+   * Creates a new empty page in the given application with the given page ID and title. The page's name is set identical to the title.
+   */
+  procedure create_new_empty_page(p_app_id in number, p_page_id in number, p_page_title in varchar2);  
+  
+  /*
+   * create_new_text_region
+   *
+   * Creates a new simple text region with the given title in the given application on the given page.
+   */
+  procedure create_new_text_region(p_app_id in number, p_page_id in number, p_region_title in varchar2, p_region_text in clob);  
+
+  /*
+   * create_new_table_region
+   *
+   * Creates a new Interactive Report region with the given title based on the given select.
+   * Returns: The ID of the newly created region
+   */  
+  function create_new_table_region(p_app_id in number, p_page_id in number, p_region_title in varchar2, p_sql_statement in clob, p_columns_desc in db_utils.t_sql_desc)
+  return number;
+  
+ /*
+  * create_new_form_region
+  *
+  * Creates a form region based on the given table along with an automatic row process and a form initialization process
+  * Returns: The ID of the newly created region
+  */  
+  function create_new_form_region(p_app_id in number, p_page_id in number, p_region_title in varchar2, p_source_table_name in varchar2, p_columns_desc in db_utils.t_sql_desc)
+  return number;
+
+  /*
+   * create_new_button
+   *
+   * Creates a Button inside a region
+   * Param: p_button_type: must have one of the following values: 'form_button_create', 'form_button_save', 'form_button_cancel', 'form_button_delete'
+   */  
+  procedure create_new_button(p_app_id in number, p_page_id in number, p_parent_region_id in number, p_button_name in varchar2, p_button_type in varchar2, p_primary_key_form_item_name in varchar2, p_target_page_id_on_cancel in varchar2 default null);
+
+  /*
+   * create_new_link_button
+   *
+   * Creates a linkbutton inside a region
+   * Param: p_button_position: must have one of the following values: 'REGION_BODY', 'SORT_ORDER', 'NEXT', 'PREVIOUS', 'RIGHT_OF_IR_SEARCH_BAR'
+   */  
+  procedure create_new_link_button(p_app_id in number, p_page_id in number, p_button_name in varchar2, p_parent_region_id in number, p_target_page_id in number, p_button_position in varchar2);
+  
+  /*
+   * create_new_branch
+   *
+   * Creates a branch on a page that leads to the target page
+   */   
+  procedure create_new_branch(p_app_id in number, p_page_id in number, p_target_page_id in number); 
+  
+/************************************************************************************
+ *
+ * Delete Procedures
+ *
+ ************************************************************************************/
+ 
+  /*
+   * delete_page
+   *
+   * Deletes an existing page in the given application with the given page ID
+   */
+  procedure delete_page(p_app_id in number, p_page_id in number);  
+
+/************************************************************************************
+ *
+ * Debugging
+ *
+ ************************************************************************************/
+
+  /*
+   * debug_import
+   *
+   * parses a certain page import so it can be debugged afterwards
+   */
+  procedure debug_import(p_app_id in number, p_page_id in number, p_apex_session_id in varchar2);
+    
+  /*
+   * TODO: Delete declaration. This function is only needed internally in the package and is only declared in the header for debugging purposes
+   */
+  function begin_edit_operation(p_app_id in number, p_page_id in number, p_import_file_name in out varchar2)
+  return clob;  
+  
+end "APEX_EDITOR";
+/

@@ -1,0 +1,45 @@
+create or replace package "DB_UTILS" as
+  
+  type column_desc is record(
+    column_name varchar2(255 char),
+    column_type varchar2(255 char),
+    is_primary  varchar2(1 char)
+  );
+  type t_sql_desc is table of column_desc;
+
+  /*
+   * get_sql_columns_desc
+   *
+   * Returns: A table of records each containing the name and type (as varchar2) of a column that the given select statement returns
+   */
+  function get_sql_columns_desc(p_sql_stmt in clob)
+  return t_sql_desc;
+
+  /*
+   * get_table_columns_desc
+   *
+   *  Returns: A table of records each containing the name, type (as varchar2), and whether it is part of the primary key of a column in the given table
+   */
+  function get_table_columns_desc(p_table_name in varchar2)
+  return t_sql_desc;
+  
+  /*
+   * get_changed_columns_in_descs
+   * 
+   * Calculate which columns where added or deleted between the p_old_columns_desc and the p_new_columns_desc.
+   *
+   * Returns: (1) p_deleted_columns: the columns from p_old_columns_desc that do not exist in p_new_columns_desc
+   *          (2) p_added_columns: the columns from p_new_columns_desc that do not exist in p_old_columns_desc 
+   */
+  procedure get_changed_columns_in_descs(p_old_columns_desc in db_utils.t_sql_desc, p_new_columns_desc in db_utils.t_sql_desc, p_deleted_columns in out db_utils.t_sql_desc, p_added_columns in out db_utils.t_sql_desc);
+
+  /*
+   * get_desc_columns_table
+   *
+   * Returns: An pex_t_varchar2 of the column names in the provided sql desc, for usage in sql statements
+   */
+  function get_desc_columns_table(p_sql_desc in t_sql_desc)
+  return apex_t_varchar2;
+
+end "DB_UTILS";
+/

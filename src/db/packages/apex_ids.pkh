@@ -1,0 +1,11 @@
+create or replace package apex_ids is
+
+  /*
+   * get_id
+   *
+   * returns the ID identified by the given name. If there is no ID for that name yet, a new ID is generated for it and it is added to the G_ID_ARRAY
+   */
+  function get_id(p_name in varchar2) 
+  return number;
+
+end apex_ids;

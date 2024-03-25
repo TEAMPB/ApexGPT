@@ -1,0 +1,282 @@
+create or replace package "APEX_IMPORT" as
+
+/************************************************************************************
+ *
+ * debugging utilities
+ *
+ ************************************************************************************/
+ 
+  /*
+   * debug_print_file_by_lines
+   *
+   * prints out the content of the import file using apex_debug.info including linenumbers.
+   */
+  procedure debug_print_file_by_lines(p_import_file in apex_t_clob);
+
+/************************************************************************************
+ *
+ * import file indexing utilities
+ *
+ ************************************************************************************/
+
+  /*
+   * get_param_value_from_line
+   *
+   * Returns: the parameter value of the given parameter in that is present in the given line
+   *          Or null if this line does not contain this parameter  
+   */
+  function get_param_value_from_line(p_line_content in clob, p_param_name in varchar2)
+  return clob;
+  
+  /*
+   * get_param_string_value_from_line
+   *
+   * Returns: the parameter value of the given parameter that is present in the given line, it assumes this parameter is a string value and therefore removes the '-ticks that are around the parameter in the import file.
+   *          Only works for single line values
+   *          Or returns null if this line does not contain this parameter  
+   */
+  function get_param_string_value_from_line(p_line_content in clob, p_param_name in varchar2)
+  return clob;  
+  
+  /*
+   * get_param_string_value_from_line_as_varchar2
+   *
+   * Returns: the parameter value of the given parameter that is present in the given line, it assumes this parameter is a string value and therefore removes the '-ticks that are around the parameter in the import file.
+   *          If the parameter is longer than 4000 bytes, only the first 4000 are returned as a varchar2. 
+   *          Only works for single line values
+   *          Returns null if this line does not contain this parameter  
+   */
+  function get_param_string_value_from_line_as_varchar2(p_line_content in clob, p_param_name in varchar2)
+  return varchar2;  
+
+  /*
+   * find_param_value_in_proc
+   *
+   * returns the parameter value of the given parameter in the procedure that starts at the given line in the p_search_file (an apex import file) 
+   * Param p_proc_start_line: The line number in p_search_file where the procedure starts and thus the search should start
+   */
+  function find_param_value_in_proc(p_search_file in apex_t_clob, p_proc_start_line in number, p_param_name in varchar2)
+  return clob; 
+ 
+  /*
+   * parse_import_file
+   *
+   * parses the given import file into the tch_apex_app_struct table
+   */
+  procedure parse_import_file(p_import_lines in apex_t_clob, p_apex_session_id in varchar2);
+
+  /*
+   * package_import_file
+   */
+  function package_import_file(p_file_name in varchar2, p_file_by_lines in apex_t_clob)
+  return apex_t_export_files;
+  
+  /*
+   * package_import_file
+   *
+   * inserts an import file clob into an apex_t_export_files structure alongside its file_name.
+   */
+  function package_import_file(p_file_name varchar2, p_file clob)
+  return apex_t_export_files;
+
+  /*
+   *  get_app_import_file
+   *
+   * Returns: A clob containing the import file of the given page in the given application
+   */ 
+  function get_app_import_file(p_app_id in number, p_page_id in number, p_import_file_name in out varchar2)
+  return clob;
+
+/************************************************************************************
+ *
+ * import file utilites
+ *
+ ************************************************************************************/
+
+  /*
+   * get_import_start_and_end
+   *
+   * Returns: An apex_t_export_files table that contains the file that needs to be executed to start an import procedure and the file needed to end the import.
+   */
+  function get_import_start_and_end(p_app_id in number)
+  return apex_t_export_files;
+
+/************************************************************************************
+ *
+ * Simple create procedures
+ *
+ ************************************************************************************/
+
+  /*
+   * get_import_create_new_page
+   *
+   * Returns: A clob that contains PL/SQL code for creating a new page with the given name, alias and title in the application that is currently being imported
+   */   
+  function get_import_create_new_page(p_page_id in number, p_page_name in varchar2, p_page_alias in varchar2,  p_page_title in varchar2)
+  return clob;
+
+/************************************************************************************
+ *
+ * Delete procedures
+ *
+ ************************************************************************************/
+  
+  /*
+   * get_import_delete_page
+   *
+   * Returns: A clob that contains PL/SQL code for deleting a page in the application that is currently being imported
+   */    
+  function get_import_delete_page(p_page_id in number)
+  return clob;
+  
+  /*
+   * remove_proc_call
+   *
+   * removes the procedure call from the import file
+   *
+   * Param: p_parent_apex_elem_id: The apex elem ID from the tch_apex_app_struct table of the procedure call that contains the parameter
+   * Param: p_proc_type: The type of procedure call that should be removed. A valid value of the column tch_apex_app_struct.elem_type, e.g. 'PAGE', 'PAGE_PLUG', 'PAGE_ITEM', 'WORKSHEET', 'WORKSHEET_COLUMN', 'WORKSHEET_REPORT'
+   */
+  procedure remove_proc_call(p_import_lines in out apex_t_clob, p_proc_type in varchar2, p_apex_elem_id in tch_apex_app_struct.parent_apex_elem_id%type, p_apex_session_id in number);
+  
+/************************************************************************************
+ *
+ * Editing procedures
+ *
+ ************************************************************************************/
+
+  /*
+   * insert_or_replace_param
+   *
+   * replaces the given value of the given parameter. Both the existing and the new parameter value may have multiple lines. 
+   * The procedure correctly handles all cases and updates the tch_apex_app_struct accordingly, if it changes the line number in the import file
+   *
+   * Param: p_parent_proc_type: A valid value of the column tch_apex_app_struct.elem_type, e.g. 'PAGE', 'PAGE_PLUG', 'PAGE_ITEM', 'WORKSHEET', 'WORKSHEET_COLUMN', 'WORKSHEET_REPORT', or 'PARAM'
+   * Param: p_new_value: The new value that the parameter in the given line should receive.
+   *                     Multiline values are always strings, so in this case a regular multiline clob must be provided. Everything else is handled by the procedure internally.
+   * Param: p_is_new_value_string: If p_new_value is a string (clob/varchar2) and not a number, this parameter must be true
+   */
+  procedure insert_or_replace_param(p_import_lines in out apex_t_clob, p_param_name in varchar2, p_parent_proc_type in varchar2, p_parent_apex_elem_id in tch_apex_app_struct.parent_apex_elem_id%type, p_new_value in clob,  p_is_new_value_string in boolean, p_apex_session_id in number);
+  
+  /*
+   * replace_value_single_line
+   *
+   * Replaces the value of the param in the given line with the given new_value.
+   * ATTENTION: this only works for params that only cover a single line in the import file (including their value)
+   */  
+  procedure replace_value_single_line (p_import_lines in out apex_t_clob, p_line_no number, p_new_value varchar2);
+  
+  /*
+   * insert_or_replace_param_single_line
+   *
+   * replaces the given value of the given parameter. This is a legacy procedure from a time when multiline values were not supported in the package. 
+   * You should use insert_or_replace_param instead, which properly handles single and multiline values
+   *
+   * Param: p_new_value: The new value that the parameter should receive. Note that this value needs to be a literal of the correct type, meaning varchar2 values need to include the surrounding ''.
+   */
+  procedure insert_or_replace_param_single_line(p_import_lines in out apex_t_clob, p_param_name in varchar2, p_parent_proc_type in varchar2, p_parent_apex_elem_id in tch_apex_app_struct.parent_apex_elem_id%type, p_new_value in varchar2, p_apex_session_id in number);
+  
+  /*
+   * insert_or_replace_param_single_line
+   *
+   * removes the given parameter line
+   *
+   * Param: p_parent_apex_elem_id: The apex elem ID from the tch_apex_app_struct table of the procedure call that contains the parameter
+   */
+  procedure remove_param_single_line(p_import_lines in out apex_t_clob, p_param_name in varchar2, p_parent_apex_elem_id in tch_apex_app_struct.parent_apex_elem_id%type, p_apex_session_id in number);
+
+
+  /*
+   * change_sql_statement_in_region
+   *
+   * Changes the SQL statement in a page plug and updates the p_report_columns parameter in its worksheet report.
+   * ATTENTION: This procedure does not change anything about the individual worksheet columns present in the import file. This has to be done seperately
+   */
+  procedure change_sql_statement_in_region(p_import_file in out apex_t_clob, p_region_id in number, p_sql_statement in clob, p_columns_desc in db_utils.t_sql_desc, p_apex_session_id number);
+  
+/************************************************************************************
+ *
+ * Insert Procedures
+ *
+ ************************************************************************************/
+
+  /*
+   * insert_new_page_plug
+   *
+   * Inserts a create page plug call into the given import file clob (p_import_file).
+   * Attention: The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   */  
+  procedure insert_new_page_plug (p_import_file in out clob, p_region_id in number, p_region_title in varchar2, p_template_id in number, p_display_sequence in number, p_text in clob);
+  
+  /*
+   * insert_new_ir_region
+   *
+   * Inserts a new interactive report region in the given import file.
+   * Returns: The ID of the newly created region
+   * Attention: 
+   * - The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   * - The sql statement p_sql_statement must not have more columns than there are letters in the alphabet (26)
+   */  
+  function insert_new_ir_region (p_import_file in out clob, p_region_title in varchar2, p_template_id in number, p_display_sequence in number, p_sql_statement in clob, p_columns_desc in db_utils.t_sql_desc)
+  return number;
+
+  /*
+   * insert_new_worksheet_column
+   *
+   * Inserts a PLSQL procedure call after after the worksheet with the given ID or after one of its worksheet_columns.
+   * Also updates the parsing table tch_apex_app_struct to include the new column
+   */
+  procedure insert_new_worksheet_column(p_import_file in out apex_t_clob, p_worksheet_id in number, p_column_desc in db_utils.column_desc, p_column_identifier in varchar2, p_display_order in number, p_apex_session_id in number);
+
+  /*
+   * insert_new_form_region
+   *
+   * Inserts a new interactive report region in the given import file.
+   * Returns: The ID of the newly created region
+   * Attention: 
+   * - The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   */  
+  function insert_new_form_region (p_import_file in out clob, p_app_id in number, p_page_id in number, p_region_title in varchar2, p_template_id in number, p_source_table_name in varchar2, p_display_sequence in number, p_columns_desc in db_utils.t_sql_desc)
+  return number;
+
+  /*
+   * insert_new_page_process
+   *
+   * Inserts a new interactive report region in the given import file.
+   * Attention: 
+   * - The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   */  
+  procedure insert_new_page_process (p_import_file in out clob, p_region_id in varchar2, p_process_name in varchar2, p_process_type in varchar2, p_process_point in varchar2,  p_process_sequence in number default 10);
+
+  /*
+   * insert_new_button
+   *
+   * Inserts a new button in the given import file.
+   * Param: p_button_type: must have one of the following values: 'form_button_create', 'form_button_save', 'form_button_cancel', 'form_button_delete'
+   * Attention: 
+   * - The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   */  
+  procedure insert_new_button (p_import_file in out clob, p_parent_region_id in number, p_button_name in varchar2, p_button_type in varchar2, p_template_id in number, p_primary_key_form_item_name in varchar2, p_target_page_on_cancel in number default null);
+
+  /*
+   * insert_new_link_button
+   *
+   * Inserts a new button in the given import file.
+   * Param: p_button_position: must have one of the following values: 'REGION_BODY', 'SORT_ORDER', 'NEXT', 'PREVIOUS', 'RIGHT_OF_IR_SEARCH_BAR'
+   * Param: p_is_button_hot: must have one of the following values: 'Y', 'N'
+   * Attention: 
+   * - The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   */   
+  procedure insert_new_link_button(p_import_file in out clob, p_template_id in varchar2, p_button_name in varchar2, p_parent_region_id in number, p_target_page_id in number, p_button_position in varchar2, p_is_button_hot in varchar2, p_icon_css_class in varchar2);
+ 
+  /*
+   * insert_new_branch
+   *
+   * Inserts a new branch in the given import file.
+   * Attention: 
+   * - The import file must only contain a single page import, multiple pages or other components apart from pages are not supported
+   */  
+  procedure insert_new_branch (p_import_file in out clob, p_page_id in number, p_target_page_id in number, p_branch_point varchar2 default 'AFTER_PROCESSING', p_branch_sequence in number default 1);
+
+end "APEX_IMPORT";
+/

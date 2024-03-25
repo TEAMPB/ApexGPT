@@ -1,0 +1,285 @@
+create or replace package "EDIT_FUNCTIONS" as
+
+/************************************************************************************
+ *
+ * ID calculation Utitlity functions
+ *
+ ************************************************************************************/
+ 
+  /*
+   * get_region_id_by_name
+   *
+   * Returns: Json structure containing all region IDs on the given page that match the given region title
+   */
+  function get_region_id_by_name(p_region_title in varchar2, p_page_id in number, p_app_id in number) 
+  return varchar2;
+ 
+  /*
+   * get_page_id_by_name
+   *
+   * Returns: A json array with all pages (and the apps in which they lie) that have the given name or title. Only searches within the given app.
+   */
+  function get_page_id_by_name(p_page_name in varchar2, p_app_id in number) 
+  return varchar2;
+  
+  /*
+   * get_page_and_app_id_by_name
+   *
+   * Returns: A json array with all pages (and the apps in which they lie) that have the given name or title.
+   */
+  function get_page_and_app_id_by_name(p_page_name in varchar2) 
+  return varchar2;
+
+  function get_app_id_by_name(p_app_name in varchar2)
+  return varchar2;
+  
+  /*
+   * get_all_available_apps
+   *
+   * Returns: A json structure with all apps including their names and IDs that can be edited. This does not include apps in the "INTERNAL" app group.
+   */
+  function get_all_available_apps
+  return clob;  
+
+  function set_current_page_and_app_id(p_app_id in number default null, p_page_id in number default null) 
+  return varchar2;
+
+  function get_used_pageids_in_app(p_app_id in number)
+  return clob;
+  
+  function get_regions_on_page(p_app_id in number, p_page_id in number)
+  return clob;
+  
+  function get_column_id_by_label(p_app_id in number, p_page_id in number, p_column_label in varchar2)
+  return clob;
+  
+  /*
+   * get_displayed_columns_in_region
+   *
+   * Returns: A JSON Array of objects that each list the column ID, its label, alias and display type in the given region
+   */
+  function get_displayed_columns_in_region(p_app_id in number, p_page_id in number, p_region_id in number)
+  return clob;
+  
+  /*
+   * get_page_items_on_page
+   *
+   * Returns: A JSON Array of objects that each list the region, item name and item label for all page_items on the given page that have the given label
+   */  
+  function get_page_item_by_label(p_app_id in number, p_page_id in number, p_item_label in varchar2)
+  return clob;
+  
+  /*
+   * get_page_items_on_page
+   *
+   * Returns: A JSON Array with all page items on the given page
+   */  
+  function get_page_items_on_page(p_app_id in number, p_page_id in number)
+  return clob;  
+  
+/************************************************************************************
+ *
+ * DB retrieval functions
+ *
+ ************************************************************************************/  
+
+  /*
+   * get_existing_table_names
+   *
+   * Returns: A commaseparated list of all table names in the DB that do not belong to the APEX_GPT App
+   */
+  function get_existing_table_names
+  return clob;
+  
+  
+  /*
+   * desc_db_table
+   *
+   * Param: p_table_name: the name of the table to be described 
+   * Returns: The description of the database table with the given name as a commaseparated list of the column names with the respective datatype in parentheses behind each name 
+   */
+  function desc_db_table(p_table_name in varchar2)
+  return clob; 
+  
+  /*
+   * get_region_sql_statement
+   * 
+   * returns a table region's sql statement
+   */
+  function get_region_sql_statement(p_region_id in number)
+  return clob;
+  
+/************************************************************************************
+ *
+ * Create functions
+ *
+ ************************************************************************************/
+ 
+  /*
+   * create_new_page
+   * 
+   * Creates a new empty page in the given APEX application with a given ID and title.
+   * 
+   * Returns: A confirmation text if the import was successful or an error text otherwise
+   */
+  function create_new_page(p_app_id in number, p_page_id in number, p_page_title in varchar2) 
+  return clob;
+  
+  /*
+   * create_new_text_region
+   *
+   * Creates a new simple text region (static content region) with the given title in the given application on the given page.
+   */
+  function create_new_text_region(p_app_id in number, p_page_id in number, p_region_title in varchar2, p_region_text in clob default '')
+  return clob;
+  
+  /*
+   * create_new_table_region
+   *
+   * Creates a new table (interactive report) on the given page in the given app based on the columns and data returned by the SQL statement 
+   */
+  function create_new_table_region(p_app_id in number, p_page_id in number, p_region_title in varchar2, p_sql_statement clob)
+  return clob;  
+  
+  /*
+   * create_new_form_region
+   *
+   * Creates a form region based on the given table from the database
+   */
+  function create_new_form_region(p_app_id in number, p_page_id in number, p_region_title in varchar2, p_source_table_name in varchar2)
+  return clob;
+
+  /*
+   * create_new_button
+   *
+   * creates a new button
+   * Param: p_button_type: must have one of the following values: 'form_button_create', 'form_button_save', 'form_button_cancel', 'form_button_delete'
+   * Param: p_target_page_id_on_cancel: If the button is a form_button_cancel, this must contain the page ID to which the cancel button should lead
+   * Param: p_primary_key_form_item_name: If this is a create, save, delete or cancel button on a form region, this must contain the item name of the form's primary key item
+   */
+  function create_new_button(p_app_id in number, p_page_id in number, p_parent_region_id in number, p_button_name in varchar2, p_button_type in varchar2, p_primary_key_form_item_name in varchar2 default null, p_target_page_id_on_cancel in number default null)
+  return clob;
+ 
+  /*
+   * create_new_link_button
+   *
+   * creates a new link button that leads to another page
+   * Param: p_button_position: must have one of the following values: 'REGION_BODY', 'SORT_ORDER', 'NEXT', 'PREVIOUS', 'RIGHT_OF_IR_SEARCH_BAR'
+   */
+  function create_new_link_button(p_app_id in number, p_page_id in number, p_parent_region_id in number, p_button_name in varchar2, p_target_page_id in number, p_button_position in varchar2)
+  return clob;
+ 
+  /*
+   * create_new_branch
+   *
+   * Creates a branch on a page that leads to the target page
+   */
+  function create_new_branch(p_app_id in number, p_page_id in number, p_target_page_id in number)
+  return clob;
+
+/************************************************************************************
+ *
+ * Delte functions
+ *
+ ************************************************************************************/
+
+  /*
+   * delete_page
+   *
+   * Deletes an existing page in the given application with the given page ID
+   */
+  function delete_page(p_app_id in number, p_page_id in number)
+  return clob;
+   
+/************************************************************************************
+ *
+ * Edit functions
+ *
+ ************************************************************************************/
+
+  /*
+   * change_page_title
+   *
+   * Changes the title of an apex page using APEX's import API
+   *
+   * Returns: a confirmation text if the import was successful or an error text otherwise
+   */
+  function change_page_title(p_app_id in number, p_page_id in number, p_new_title in varchar2) 
+  return clob;
+  
+  /*
+   * change_region_title
+   *
+   * Changes the title of an apex region using APEX's import API
+   *
+   * Returns: a confirmation text if the import was successful or an error text otherwise
+   */
+  function change_region_title(p_app_id in number, p_page_id in number, p_region_id in number, p_new_title in varchar2) 
+  return clob;
+  
+  /*
+   * change_region_text
+   *
+   * Changes the text shown in the region with the given region_id on the page with the given page_id inside the application with the given app_id
+   */
+  function change_region_text(p_app_id in number, p_page_id in number,  p_region_id in number, p_new_region_text in varchar2)
+  return clob;
+  
+  /*
+   * change_region_column_label
+   *
+   * Changes the label of a table region's column on the page with the given page_id inside the application with the given app_id
+   */
+  function change_region_column_label(p_app_id in number, p_page_id in number, p_column_id in number, p_new_label in varchar2)
+  return clob;
+
+  /*
+   * change_column_format_mask
+   * 
+   * Changes the format mask of a table region's column
+   */
+  function change_column_format_mask(p_app_id in number, p_page_id in number, p_column_id in number, p_new_format_mask in varchar2)
+  return clob;
+
+  /*
+   * change_table_column_type
+   *
+   * Changes the type of a column in a table region
+   * 
+   * Param p_page_id: the page on which the region is
+   * Param p_new_column_type: The new type of the column. Must be 'PLAIN_TEXT', 'LINK', or 'HIDDEN' 
+   *
+   * If the p_new_column_type is 'LINK' the following parameters must be given:   
+   * Param p_link_target_page_id: the page ID to which the link should point
+   * Param p_link_target_page_item_name: The page item name on the target page that should be filled with a value
+   * Param p_region_column_name: The columnname from the region whose value should be used to fill the target page item 
+   */
+  function change_table_column_type(p_app_id in number, p_page_id in number, p_region_id in number, p_column_id in number, p_new_column_type in varchar2, p_link_target_page_id in number default null, p_link_target_page_item_name in varchar2 default null, p_region_column_name in varchar2 default null)
+  return clob;
+
+  /*
+   * change_table_region_sql_statement
+   *
+   * changes the sql statement that defines which columns exist in a table region (interactive report)
+   */
+  function change_table_region_sql_statement(p_app_id in number, p_page_id in number, p_region_id in number, p_new_sql_statement clob)
+  return clob;
+
+  /*
+   * set_link_to_page_in_table_region
+   * 
+   * Changes the link column in a table region to point to the given target 
+   */  
+  function set_link_to_page_in_table_region(p_app_id in number, p_page_id in number, p_region_id in number, p_link_target_page_id in number, p_link_target_page_item_name in varchar2, p_region_column_name in varchar2)
+  return clob;
+  
+  /*
+   * set_page_item_label
+   *
+   * Changes the label of a page item on the page with the given page_id inside the application with the given app_id
+   */    
+  function change_page_item_label(p_app_id in number, p_page_id in number, p_page_item_name in varchar2, p_new_label in varchar2)  
+  return clob;
+
+end "EDIT_FUNCTIONS";
+/

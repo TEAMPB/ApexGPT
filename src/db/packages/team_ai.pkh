@@ -1,0 +1,95 @@
+create or replace package "TEAM_AI" as
+
+  type t_usage_tokens is RECORD (
+    prompt_tokens       number,
+    completion_tokens   number,
+    total_tokens        number
+  );
+
+  procedure debug_chat_messages;
+  
+  procedure set_api_key (p_api_key in varchar2);
+  procedure clear_chat_messages;
+
+  function last_request return clob;
+  function last_response return clob;
+  function get_verlauf return clob;
+
+  procedure add_param(p_name in VARCHAR2,
+                      p_description in varchar2,
+                      p_type in varchar2,
+                      p_enum_values in apex_t_varchar2 default null,
+                      p_required_knz in varchar2 default '0');
+
+  procedure add_function(p_name in VARCHAR2,
+                         p_description in varchar2,
+                         p_return_type in varchar2,
+                         p_plsql_function in varchar2 default null);
+
+
+  procedure add_chat_message(p_role in varchar2,
+                             p_content in clob,
+                             p_name in varchar2 default null,
+                             p_repace_after_computet_by in varchar2 default null,
+                             p_type in varchar2 default null,
+                             p_tools_call_id in varchar2 default null,
+                             p_arguments in clob default null);
+                             
+  function gen_chat_request(p_model in varchar2 default null,
+                            p_stream_knz in varchar2 default '0',
+                            p_temperature in number default 1,
+                            p_presence_penalty in number default 0,
+                            p_frequency_penalty in number default 0,
+                            p_limit_messages in number default 9999)
+    return clob;
+
+  
+
+  function send_gen_chat_request(p_request in clob,
+                                 p_api_key in varchar2 default null)
+  return clob;
+
+                          
+
+
+  function get_plsql_chat_response(p_model in varchar2 default null,
+                                  p_temperature in number default 1,
+                                  p_presence_penalty in number default 0,
+                                  p_frequency_penalty in number default 0,
+                                  p_max_requests in number default 30,
+                                  p_api_key in varchar2 default null,
+                                  p_limit_messages in number default 9999,
+                                  p_usage_tokens out t_usage_tokens,
+                                  p_answer_request_id in tch_request_status.tch_request_id%type,
+                                  p_chat_session_id in tch_request_status.chat_session_id%type,
+                                  p_lang in varchar2,
+                                  p_max_sequence_nr in out number)
+   return clob;
+
+  function debug_chat_request(p_model in varchar2 default null,
+                              p_temperature in number default 1,
+                              p_presence_penalty in number default 0,
+                              p_frequency_penalty in number default 0,
+                              p_max_requests in number default 30,
+                              p_api_key in varchar2 default null,
+                              p_limit_messages in number default 9999)
+   return clob;
+
+  /*
+   * web_stream_to_file
+   *
+   * converts a base64 encoded audio webstream given as a clob to a blob audio file
+   */
+  function web_stream_to_file(p_webStream clob) return blob;
+  
+  /*
+   * speach_to_text
+   *
+   * Uses OpenAI's API to extract the spoken text out of a blob webstream audiofile
+   *
+   */
+  function speach_to_text(p_data blob,
+                          p_api_key in varchar2 default null) return clob;
+
+end "TEAM_AI";
+/

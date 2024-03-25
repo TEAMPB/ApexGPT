@@ -1,0 +1,11 @@
+create or replace package "GPT_FUNCTION_DECLARATIONS" as
+
+  /*
+   * declare_all_functions_to_openai
+   *
+   * Defines all functions and their parameters including their explanation texts that are available for OpenAI's API to call via the TEAM_AI package.
+   */
+  procedure declare_all_functions_to_openai;
+
+end "GPT_FUNCTION_DECLARATIONS";
+/

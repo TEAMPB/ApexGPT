@@ -1,0 +1,27 @@
+create or replace package "APEX_GPT" as
+
+  /*
+   * get_gpt_response
+   * 
+   * Sends the user prompt on page 100 as a new chat message in the currently active history to OpenAI and iteratively executes the functions that OpenAI requests until OpenAI returns a response intended for the user
+   */
+  procedure get_gpt_response;
+
+  /*
+   * init_new_chat_history
+   *
+   * Clears the previous chat history held in the team_ai package and sets up a new chat history with system prompt, function declarations etc. 
+   */
+  procedure init_new_chat_history;
+  
+  /*
+   * update_edit_status
+   *
+   * Updates the editing status tracked in the TCH_REQUEST_STATUS table to the given function name
+   */
+  procedure update_edit_status (p_chat_session_id in tch_request_status.chat_session_id%type, 
+                                p_answer_request_id in tch_request_status.tch_request_id%type, 
+                                p_function_name in varchar2, 
+                                p_lang in varchar);
+end "APEX_GPT";
+/

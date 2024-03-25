@@ -1,0 +1,64 @@
+create or replace package "APEX_APP_STRUCT" as
+
+  /*
+   * clear_session
+   *
+   * Deletes all entries for the given session_id in the tch_apex_app_struct table which is the parsed version of an apex import file
+   */
+  procedure clear_session(p_session_id  tch_apex_app_struct.session_id%type);
+
+  /*
+   * add_page
+   *
+   * Adds an entry of type page to the tch_apex_app_struct table
+   */
+  procedure add_page (p_apex_elem_id              tch_apex_app_struct.apex_elem_id%type,
+                      p_parent_apex_elem_id       tch_apex_app_struct.parent_apex_elem_id%type, 
+                      p_import_file_start_line    tch_apex_app_struct.import_file_start_line%type,
+                      p_session_id                tch_apex_app_struct.session_id%type);
+
+  /*
+   * add_page_plug
+   *
+   * Adds an entry of type page_plug (a basic region) to the tch_apex_app_struct table
+   */
+  procedure add_page_plug(p_apex_elem_id              tch_apex_app_struct.apex_elem_id%type,
+                          p_parent_apex_elem_id       tch_apex_app_struct.parent_apex_elem_id%type, 
+                          p_import_file_start_line    tch_apex_app_struct.import_file_start_line%type,
+                          p_session_id                tch_apex_app_struct.session_id%type);
+                          
+  /*
+   * add_worksheet
+   *
+   * Adds an entry of type worksheet (the container for IR columns) to the tch_apex_app_struct table
+   */
+  procedure add_worksheet(p_apex_elem_id              tch_apex_app_struct.apex_elem_id%type,
+                          p_parent_apex_elem_id       tch_apex_app_struct.parent_apex_elem_id%type, 
+                          p_import_file_start_line    tch_apex_app_struct.import_file_start_line%type,
+                          p_session_id                tch_apex_app_struct.session_id%type);                        
+
+  /*
+   * add_param
+   *
+   * Adds an entry of type param to the tch_apex_app_struct table
+   */
+  procedure add_param(p_elem_name                 tch_apex_app_struct.elem_name%type,
+                      p_apex_elem_id              tch_apex_app_struct.apex_elem_id%type,
+                      p_parent_apex_elem_id       tch_apex_app_struct.parent_apex_elem_id%type, 
+                      p_import_file_start_line    tch_apex_app_struct.import_file_start_line%type,
+                      p_session_id                tch_apex_app_struct.session_id%type);
+
+  /*
+   * add_element
+   *
+   * Adds an entry of the given type to the tch_apex_app_struct table
+   */
+  procedure add_element(p_elem_name                 tch_apex_app_struct.elem_name%type default null,
+                        p_apex_elem_id              tch_apex_app_struct.apex_elem_id%type,
+                        p_parent_apex_elem_id       tch_apex_app_struct.parent_apex_elem_id%type, 
+                        p_import_file_start_line    tch_apex_app_struct.import_file_start_line%type,
+                        p_session_id                tch_apex_app_struct.session_id%type,
+                        p_elem_type                 tch_apex_app_struct.elem_type%type);
+
+end "APEX_APP_STRUCT";
+/

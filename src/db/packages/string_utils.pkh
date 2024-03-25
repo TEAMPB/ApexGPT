@@ -1,0 +1,114 @@
+create or replace package "STRING_UTILS" as
+
+  /*
+   * Type declarations
+   */
+  type t_clob_table is table of clob;
+
+  /*
+   * markdown_to_html
+   *
+   * Replaces escaped Markdown-specific characters in the input string with original characters.
+   * 
+   * Returns: The string containing the unescaped markdown-specific characters
+   */
+  function markdown_to_html(p_input_text IN CLOB) 
+  RETURN CLOB;
+
+  /*
+   * Split clob into individual lines where p_delim is the delimiter that marks the end of a line
+   *
+   * Source: https://stackoverflow.com/questions/67414603/how-do-we-split-a-clob-with-some-lines-with-more-than-32k-characters-line-by-l
+   *
+   * Returns: A table of clobs with each clob being a single line in the input clob
+   */
+  function split_clob_by_lines(p_clob in clob, p_delim in varchar2 default chr(10)) 
+  return t_clob_table;
+  
+  /*
+   * insert_line_into_array
+   *
+   * Inserts the given clob into the given apex clob table at the given index. The clob that currently sits at that index and all subsequent clobs get moved one index higher.
+   * Thus, the array is one element longer after a call to this procedure.
+   */
+  procedure insert_line_into_array(p_clob_array in out apex_t_clob, p_line in clob, p_index in number);
+
+  /*
+   * insert_block_into_array
+   *
+   * Inserts the given block of clob lines into the given apex clob table starting at the given index. The clob that currently sits at that index and all subsequent clobs get moved to higher indices.
+   * Thus, the array is longer after a call to this procedure by the amount of elements (lines) in the clob block.
+   * Param: p_insert_clob_block: Must be a dense array, i.e., the indices must start at 1 and each index until the final one must exist in the array. There must be no gaps
+   */
+  procedure insert_block_into_array(p_clob_array in out apex_t_clob, p_insert_clob_block in out apex_t_clob, p_starting_index in number);
+  
+  /*
+   * make_dense_clob_collection
+   *
+   * Copies all element from p_sparse_clobs into a new apex_t_clob collection while remove indices that do not have a value.
+   * Thus, making the indices in the new collection count up without gaps (dense)
+   */
+   function make_dense_clob_collection(p_sparse_clobs apex_t_clob)
+   return apex_t_clob;  
+
+  /*
+   * escape_single_quotes
+   *
+   * Takes in an input string where ' are not escaped and replaces each ' with '' to escape them. 
+   * Returns: The resulting escaped string
+   */
+  function escape_single_quotes(p_input VARCHAR2) 
+  return varchar2;
+ 
+  /*
+   * escape_single_quote (clob overrride)
+   *
+   * Takes in an input string where ' are not escaped and replaces each ' with '' to escape them. 
+   * Returns: The resulting escaped string
+   */
+  function escape_single_quotes(p_input clob) 
+  return clob;
+  
+  /*
+   * convert_to_valid_json
+   *
+   * converts a json function call that is surrounded by two { } instead of one to a valid call with one { }.
+   */
+  function convert_to_valid_json(p_raw_function_json clob)
+  return clob;
+  
+  /*
+   * remove_flow_call_from_id
+   *
+   * Removes the wwv_flow call around an ID value from an apex import file
+   */
+  function remove_flow_call_from_id(p_id_string in tch_apex_app_struct.apex_elem_id%type)
+  return tch_apex_app_struct.apex_elem_id%type;
+  
+  /*
+   * remove_ticks_from_string
+   *
+   * Removes enclosing ' ' from the given string, if they are present. leading and trailing spaces outside the ' ' are removed as well.
+   */
+  function remove_ticks_from_string(p_string in varchar2)
+  return varchar2;  
+
+  /*
+   * convert_clob_to_multiline_t_varchar2
+   *
+   * Converts the given clob containing linebreaks into an apex_t_varchar2 literal 
+   */
+  function convert_clob_to_multiline_t_varchar2(p_clob in clob)
+  return clob;
+  
+  /*
+   * is_clob_single_line
+   *
+   * Returns: true if the given clob contains only one line
+   *          false if it has multiple lines
+   */
+  function is_clob_single_line(p_clob in clob) 
+  return boolean;
+
+end "STRING_UTILS";
+/
